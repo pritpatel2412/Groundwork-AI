@@ -31,7 +31,24 @@ def _clean_and_parse_json(raw: str) -> Dict[str, Any]:
     # Remove trailing commas before closing braces/brackets
     cleaned = re.sub(r',\s*([\]}])', r'\1', cleaned)
 
-    return json.loads(cleaned)
+    try:
+        return json.loads(cleaned)
+    except Exception as e:
+        # JSON Repair / Healing: If cut off at tail, salvage completed requirement objects
+        last_obj = cleaned.rfind("}")
+        if last_obj != -1:
+            candidate = cleaned[:last_obj + 1].strip()
+            candidate = re.sub(r',\s*$', '', candidate)
+            candidate += '\n  ],\n  "open_questions": [],\n  "contradictions": []\n}'
+            candidate = re.sub(r',\s*([\]}])', r'\1', candidate)
+            try:
+                repaired = json.loads(candidate)
+                if isinstance(repaired, dict) and "requirements" in repaired:
+                    print(f"[AnalystAgent] Rescued {len(repaired['requirements'])} requirements via auto-repair from truncated section.")
+                    return repaired
+            except Exception:
+                pass
+        raise e
 
 class AnalystAgent:
     """

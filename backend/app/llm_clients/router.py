@@ -26,7 +26,7 @@ NVIDIA_CLIENT = OpenAI(
 ) if NVIDIA_API_KEY else None
 
 # Active models confirmed on the user's free tier
-GROQ_MODELS = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b"]
+GROQ_MODELS = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "groq/compound", "qwen/qwen3.6-27b"]
 NVIDIA_VERIFIER_MODELS = ["nvidia/nemotron-3-super-120b-a12b", "meta/llama-3.2-11b-vision-instruct"]
 
 # Simple in-memory response cache to preserve free-tier quota (BUILD_BRIEF.md §7, §8)
@@ -38,21 +38,60 @@ def _get_cache_key(messages: List[Dict[str, str]], purpose: str, model: str, jso
     content = json.dumps({"purpose": purpose, "model": model, "messages": messages, "json_mode": json_mode}, sort_keys=True)
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
-def _check_disk_cache(key: str) -> Optional[str]:
+def _check_disk_cache(key: str, json_mode: bool = False) -> Optional[str]:
     if key in _CACHE:
-        return _CACHE[key]
+        val = _CACHE[key]
+        if json_mode:
+            try:
+                json.loads(val)
+                return val
+            except Exception:
+                _CACHE.pop(key, None)
+        else:
+            return val
+
     cache_path = os.path.join(CACHE_DIR, f"{key}.json")
     if os.path.exists(cache_path):
         try:
             with open(cache_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                _CACHE[key] = data["response"]
-                return data["response"]
+                resp = data.get("response", "")
+                if json_mode:
+                    try:
+                        json.loads(resp)
+                    except Exception:
+                        try:
+                            os.remove(cache_path)
+                        except Exception:
+                            pass
+                        return None
+                _CACHE[key] = resp
+                return resp
         except Exception:
             pass
     return None
 
-def _write_disk_cache(key: str, response: str):
+def _write_disk_cache(key: str, response: str, json_mode: bool = False):
+    if not response or not response.strip():
+        return
+    if json_mode:
+        try:
+            import re
+            cleaned = response.strip()
+            if "```json" in cleaned:
+                cleaned = cleaned.split("```json")[1].split("```")[0].strip()
+            elif "```" in cleaned:
+                cleaned = cleaned.split("```")[1].split("```")[0].strip()
+            first_brace = cleaned.find("{")
+            last_brace = cleaned.rfind("}")
+            if first_brace != -1 and last_brace != -1:
+                cleaned = cleaned[first_brace:last_brace + 1]
+            cleaned = re.sub(r',\s*([\]}])', r'\1', cleaned)
+            json.loads(cleaned)
+        except Exception:
+            # Corrupted or truncated JSON! Never cache it!
+            return
+
     _CACHE[key] = response
     cache_path = os.path.join(CACHE_DIR, f"{key}.json")
     try:
@@ -81,48 +120,52 @@ def call_llm(
     selected_model_name = model or "router"
     cache_key = _get_cache_key(messages, purpose, selected_model_name, json_mode)
     if use_cache:
-        cached = _check_disk_cache(cache_key)
+        cached = _check_disk_cache(cache_key, json_mode)
         if cached is not None:
             return cached
 
     # Determine provider ordering
-    groq_tuple = (GROQ_CLIENT, GROQ_MODELS[0]) if GROQ_CLIENT else None
-    nvidia_tuple = (NVIDIA_CLIENT, NVIDIA_VERIFIER_MODELS[0]) if NVIDIA_CLIENT else None
+    groq_providers = [(GROQ_CLIENT, m) for m in GROQ_MODELS] if GROQ_CLIENT else []
+    nvidia_providers = [(NVIDIA_CLIENT, m) for m in NVIDIA_VERIFIER_MODELS] if NVIDIA_CLIENT else []
 
     if model:
         # If explicit model requested, route to appropriate client
-        if any(prefix in model for prefix in ["meta/", "nvidia/", "deepseek", "mistral", "qwen/qwen-"]):
+        if any(prefix in model for prefix in ["meta/", "nvidia/", "deepseek", "mistral"]):
             client = NVIDIA_CLIENT or GROQ_CLIENT
         else:
             client = GROQ_CLIENT or NVIDIA_CLIENT
         provider_order = [(client, model)]
         if purpose == "verify":
-            if nvidia_tuple and nvidia_tuple not in provider_order:
-                provider_order.append(nvidia_tuple)
-            if groq_tuple:
-                provider_order.append(groq_tuple)
+            for np in nvidia_providers:
+                if np not in provider_order:
+                    provider_order.append(np)
+            for gp in groq_providers:
+                if gp not in provider_order:
+                    provider_order.append(gp)
         else:
-            if groq_tuple and groq_tuple not in provider_order:
-                provider_order.append(groq_tuple)
-            if nvidia_tuple:
-                provider_order.append(nvidia_tuple)
+            for gp in groq_providers:
+                if gp not in provider_order:
+                    provider_order.append(gp)
+            for np in nvidia_providers:
+                if np not in provider_order:
+                    provider_order.append(np)
     elif purpose == "generate":
         # Primary: Groq; Fallback: NVIDIA
-        provider_order = [p for p in [groq_tuple, nvidia_tuple] if p is not None]
+        provider_order = groq_providers + nvidia_providers
     else:
         # Primary: NVIDIA (independently-scoped); Fallback: Groq
-        provider_order = [p for p in [nvidia_tuple, groq_tuple] if p is not None]
+        provider_order = nvidia_providers + groq_providers
 
     if not provider_order:
         raise RuntimeError("No LLM client configured. Please check GROQ_API_KEY and NVIDIA_API_KEY in backend/.env")
 
     last_err = None
 
-    for client, model in provider_order:
+    for client, m_name in provider_order:
         for attempt in range(max_retries):
             try:
                 kwargs = {
-                    "model": model,
+                    "model": m_name,
                     "messages": messages,
                     "temperature": temperature,
                     "max_tokens": 4096,
@@ -131,9 +174,12 @@ def call_llm(
                 if json_mode:
                     kwargs["response_format"] = {"type": "json_object"}
                 resp = client.chat.completions.create(**kwargs)
-                text = resp.choices[0].message.content or ""
+                choice = resp.choices[0]
+                if choice.finish_reason == "length":
+                    raise RuntimeError(f"Model {m_name} output truncated by token limit (finish_reason=length)")
+                text = choice.message.content or ""
                 if use_cache and text:
-                    _write_disk_cache(cache_key, text)
+                    _write_disk_cache(cache_key, text, json_mode)
                 return text
             except Exception as e:
                 # If json_mode was rejected by this model/endpoint, attempt without response_format
@@ -141,9 +187,12 @@ def call_llm(
                     try:
                         kwargs.pop("response_format", None)
                         resp = client.chat.completions.create(**kwargs)
-                        text = resp.choices[0].message.content or ""
+                        choice = resp.choices[0]
+                        if choice.finish_reason == "length":
+                            raise RuntimeError(f"Model {m_name} output truncated by token limit")
+                        text = choice.message.content or ""
                         if use_cache and text:
-                            _write_disk_cache(cache_key, text)
+                            _write_disk_cache(cache_key, text, json_mode)
                         return text
                     except Exception as inner_e:
                         last_err = inner_e
