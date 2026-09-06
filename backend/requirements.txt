@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+crewai
+groq
+openai
+sentence-transformers
+pytesseract
+pillow
+pymupdf
+python-docx
+supabase
+psycopg2-binary
+pgvector
+requests
+python-multipart

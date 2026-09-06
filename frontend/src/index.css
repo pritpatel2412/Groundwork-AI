@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #ECEDEE;
+    color: #232427;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.035em;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* Serif Accents matching specification */
+.font-serif-accent {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
+
+/* Custom wchar variable font weight interaction (600 base to 900 on mouse proximity) */
+.wchar {
+  display: inline-block;
+  font-variation-settings: 'wght' 600;
+  transition: font-variation-settings 0.15s linear;
+  will-change: font-variation-settings;
+}
+
+/* Specific inner white inset shadow */
+.sprint-inset-shadow {
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.sprint-card-shadow {
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 14px 30px -18px rgba(35, 36, 39, 0.25);
+}
+
+.sprint-featured-shadow {
+  box-shadow: 0 24px 60px rgba(23, 23, 25, 0.7);
+}
+
+/* Scroll reveal initial states and transitions */
+[data-rise], [data-reveal] {
+  opacity: 0;
+  transform: translateY(1rem);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-rise].is-revealed, [data-reveal].is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #ECEDEE;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C8CACD;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #E34A32;
+}
+
+

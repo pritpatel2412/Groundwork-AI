@@ -1,0 +1,17 @@
+STANDARD OPERATING PROCEDURE: PROCUREMENT & EXPENSE APPROVALS
+Document Version: 2.4
+Effective Date: Q3 2026
+
+1. Objective
+This document outlines the operational process for submitting, approving, and auditing employee procurement requests within the enterprise ERP ecosystem.
+
+2. Submission Rules
+Employees must initiate all expense and purchase requests via the employee portal. Every request must include an itemized invoice, vendor tax identification number, and budget allocation category code.
+
+3. Approval Thresholds & Workflow
+Purchase requests with a total amount under $1,000 are automatically approved by the system upon submission, provided the requesting department has remaining discretionary budget.
+Purchase requests equal to or exceeding $1,000 require formal digital sign-off from the designated Department Operations Manager before funds are disbursed.
+For capital expenditures exceeding $10,000, secondary approval from the Corporate Finance Controller is mandatory.
+
+4. Audit & Payment Settlement
+Once approved, the Procurement Service dispatches a notification to Accounts Payable. All audit records, timestamped managerial approvals, and invoice attachments are stored immutably for seven years to satisfy regulatory compliance requirements.

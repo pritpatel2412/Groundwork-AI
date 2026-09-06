@@ -1,0 +1,14 @@
+TRANSCRIPT OF DISCOVERY INTERVIEW & MEETING NOTES
+Project: Agile Spend Transformation
+Participants: Sarah (VP Operations), David (Procurement Lead), Raj (Finance)
+Date: August 24, 2026
+
+[00:04:12] Sarah: Thanks everyone for jumping on. We need to streamline our internal spending portal. Right now, frontline staff wait three days just to buy $200 office peripherals.
+
+[00:05:45] David: Agreed. The policy we agreed upon last week in the steering committee is that any purchase request under $1,000 should be auto-approved instantly with no manager touchpoint. It cuts 70% of ticket volume.
+
+[00:08:19] Raj: Wait a second, David. In the finance executive sync yesterday, CFO Marcus explicitly revised that. He insisted that the threshold for auto-approval is strictly set to $5,000 to maximize operational velocity across engineering teams. Anything above $5,000 triggers an escalation review.
+
+[00:10:02] Sarah: That's a direct discrepancy between the committee memo and the CFO sync. We cannot deploy an automated approval rule until this conflict is clarified.
+
+[00:15:30] David: In either scenario, we also need an emergency override button for department heads, and an audit trail exportable as monthly PDF or CSV reports.
