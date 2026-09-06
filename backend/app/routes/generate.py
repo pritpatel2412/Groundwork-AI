@@ -179,6 +179,7 @@ async def orchestrate_workspace_pipeline(workspace_id: str) -> AsyncGenerator[st
     })
 
 @router.post("/{workspace_id}/generate")
+@router.get("/{workspace_id}/generate")
 async def trigger_generation_stream(workspace_id: str):
     """
     Triggers end-to-end multi-agent pipeline and streams Server-Sent Events (SSE)
