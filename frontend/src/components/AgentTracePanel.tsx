@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bot, CheckCircle2, Loader2, Sparkles, ShieldCheck, ChevronRight, Activity } from 'lucide-react';
+import { Bot, CheckCircle2, Loader2, Sparkles, ShieldCheck, ChevronRight, Activity, AlertCircle } from 'lucide-react';
 import { useAppStore } from '../lib/store';
 
 export const AgentTracePanel: React.FC = () => {
@@ -36,12 +36,15 @@ export const AgentTracePanel: React.FC = () => {
           const isDone = stage.status === 'done';
           const isRunning = stage.status === 'running';
           const isPending = stage.status === 'pending';
+          const isError = stage.status === 'error';
 
           return (
             <div
               key={stage.id}
               className={`p-3.5 rounded-xl border transition-all duration-300 ${
-                isRunning
+                isError
+                  ? 'bg-red-50/70 border-red-200 shadow-xs ring-1 ring-red-300'
+                  : isRunning
                   ? 'bg-white border-[#E34A32] shadow-[0_4px_16px_rgba(227,74,50,0.12)] ring-1 ring-[#E34A32]/30'
                   : isDone
                   ? 'bg-[#F4F5F5] border-black/5 shadow-xs'
@@ -50,10 +53,18 @@ export const AgentTracePanel: React.FC = () => {
             >
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-[#E34A32]">0{idx + 1}</span>
+                  <span className={`text-xs font-mono font-bold ${isError ? 'text-red-600' : 'text-[#E34A32]'}`}>
+                    0{idx + 1}
+                  </span>
                   <h4 className="text-xs font-bold text-[#232427] tracking-tight">{stage.name}</h4>
                 </div>
                 <div>
+                  {isError && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-red-700 bg-red-100 px-2 py-0.5 rounded-full border border-red-300">
+                      <AlertCircle className="w-2.5 h-2.5 text-red-600" strokeWidth={1.5} />
+                      FAILED
+                    </span>
+                  )}
                   {isRunning && (
                     <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-[#E34A32] bg-[#E34A32]/10 px-2 py-0.5 rounded-full border border-[#E34A32]/20">
                       <Loader2 className="w-2.5 h-2.5 animate-spin" strokeWidth={1.5} />
@@ -75,7 +86,9 @@ export const AgentTracePanel: React.FC = () => {
               </div>
 
               <p className="text-[11px] text-[#2E3034] font-medium mb-1">{stage.label}</p>
-              <p className="text-[11px] text-[#55575c] leading-relaxed font-sans">{stage.message}</p>
+              <p className={`text-[11px] leading-relaxed font-sans ${isError ? 'text-red-700 font-medium' : 'text-[#55575c]'}`}>
+                {stage.message}
+              </p>
 
               {/* Live badges if available */}
               {stage.claimsCount > 0 && (

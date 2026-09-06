@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { UploadCloud, FileText, Mic, Sparkles, CheckCircle2, AlertTriangle, Layers, Play, ArrowRight } from 'lucide-react';
+import { UploadCloud, FileText, Mic, Sparkles, CheckCircle2, AlertTriangle, AlertCircle, Layers, Play, ArrowRight } from 'lucide-react';
 import { api, SourceDocument } from '../lib/api';
 import { useAppStore } from '../lib/store';
+import { supabase } from '../lib/supabase';
 
 export const IngestionPanel: React.FC = () => {
   const { currentWorkspace, isGenerating, setIsGenerating, updateStage, resetStages, setActiveTab } = useAppStore();
@@ -10,6 +11,7 @@ export const IngestionPanel: React.FC = () => {
   const [isSubmittingText, setIsSubmittingText] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [pipelineError, setPipelineError] = useState<string | null>(null);
 
   const fetchSources = async () => {
     if (!currentWorkspace) return;
@@ -69,10 +71,15 @@ export const IngestionPanel: React.FC = () => {
   const handleTriggerPipeline = async () => {
     if (!currentWorkspace) return;
     setIsGenerating(true);
+    setPipelineError(null);
     resetStages();
 
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+
     const eventSource = new EventSource(
-      `${api.defaults.baseURL || 'http://localhost:8000'}/workspaces/${currentWorkspace.id}/generate`
+      `${api.defaults.baseURL || 'http://localhost:8000'}/workspaces/${currentWorkspace.id}/generate${tokenParam}`
     );
 
     eventSource.addEventListener('trace', (event) => {
@@ -84,6 +91,12 @@ export const IngestionPanel: React.FC = () => {
           claimsCount: data.claims_count,
           data: data.data,
         });
+
+        if (data.status === 'error') {
+          setPipelineError(data.message || 'Could not extract grounded requirements from your source material — try uploading more detail, or a different format.');
+          setIsGenerating(false);
+          eventSource.close();
+        }
       } catch (err) {
         console.error('SSE trace parse error:', err);
       }
@@ -95,8 +108,15 @@ export const IngestionPanel: React.FC = () => {
       setActiveTab('requirements');
     });
 
-    eventSource.addEventListener('error', (err) => {
-      console.error('SSE stream error:', err);
+    eventSource.addEventListener('error', (err: any) => {
+      try {
+        if (err.data) {
+          const parsed = JSON.parse(err.data);
+          if (parsed.message) {
+            setPipelineError(parsed.message);
+          }
+        }
+      } catch (_) {}
       setIsGenerating(false);
       eventSource.close();
     });
@@ -137,6 +157,18 @@ export const IngestionPanel: React.FC = () => {
           <span>{isGenerating ? 'Synthesizing Pipeline...' : 'Synthesize Grounded Blueprint'}</span>
         </button>
       </div>
+
+      {pipelineError && (
+        <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-start gap-3 animate-in fade-in duration-200 shadow-xs">
+          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h4 className="font-bold text-sm mb-1 text-red-900 font-sans">
+              Pipeline Halted: Cite-or-Abstain Invariant Enforced
+            </h4>
+            <p className="leading-relaxed font-sans">{pipelineError}</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* File Upload Box */}

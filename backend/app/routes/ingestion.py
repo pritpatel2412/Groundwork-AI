@@ -1,16 +1,25 @@
 import io
-import os
 from typing import Optional, List
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from pydantic import BaseModel
 
 from app.db.client import db_client
 from app.rag.chunking import chunk_text
 from app.rag.embeddings import embed
-from app.models.schemas import SourceDocument, SourceChunk
+from app.models.schemas import SourceDocument, SourceChunk, Workspace
 from app.llm_clients.sarvam_client import sarvam_client
+from app.auth import get_current_user, AuthenticatedUser
 
 router = APIRouter(prefix="/workspaces", tags=["Ingestion"])
+
+def check_workspace_access(workspace_id: str, current_user: AuthenticatedUser) -> Workspace:
+    ws = db_client.get_workspace(workspace_id, current_user.id)
+    if not ws:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Workspace '{workspace_id}' not found or you do not have permission to access it."
+        )
+    return ws
 
 class TextIngestRequest(BaseModel):
     text: str
@@ -57,12 +66,15 @@ def process_and_save_document(
     if not raw_text.strip():
         raise HTTPException(status_code=400, detail="No readable text extracted from source.")
 
+    valid_source_types = {"document", "voice_transcript", "screenshot_ocr", "free_text", "meeting_transcript"}
+    normalized_source_type = source_type if source_type in valid_source_types else "document"
+
     # 1. Save Source Document
     doc = db_client.save_source_document(
         workspace_id=workspace_id,
         filename=filename,
         raw_text=raw_text,
-        source_type=source_type
+        source_type=normalized_source_type
     )
 
     # 2. Chunk text
@@ -88,12 +100,13 @@ def process_and_save_document(
     return doc
 
 @router.post("/{workspace_id}/sources/text", response_model=SourceDocument)
-async def ingest_text(workspace_id: str, request: TextIngestRequest):
+async def ingest_text(
+    workspace_id: str,
+    request: TextIngestRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
     """Ingest free-text, meeting notes, or pasted transcripts."""
-    ws = db_client.get_workspace(workspace_id)
-    if not ws:
-        # Auto-create if not existing for smooth dev experience
-        db_client.create_workspace(name=f"Workspace {workspace_id[:8]}")
+    check_workspace_access(workspace_id, current_user)
 
     doc = process_and_save_document(
         workspace_id=workspace_id,
@@ -106,12 +119,11 @@ async def ingest_text(workspace_id: str, request: TextIngestRequest):
 @router.post("/{workspace_id}/sources/upload", response_model=SourceDocument)
 async def ingest_file(
     workspace_id: str,
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    current_user: AuthenticatedUser = Depends(get_current_user)
 ):
     """Ingest file: PDF, DOCX, TXT, Image (OCR), or Audio (Sarvam STT)."""
-    ws = db_client.get_workspace(workspace_id)
-    if not ws:
-        db_client.create_workspace(name=f"Workspace {workspace_id[:8]}")
+    check_workspace_access(workspace_id, current_user)
 
     content = await file.read()
     filename = file.filename or "uploaded_file"
@@ -119,6 +131,17 @@ async def ingest_file(
 
     extracted_text = ""
     source_type = "document"
+
+    ALLOWED_EXTENSIONS = {
+        "pdf", "docx", "doc", "txt", "md", "csv", "json",
+        "png", "jpg", "jpeg", "webp", "bmp",
+        "wav", "mp3", "m4a", "ogg"
+    }
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type '.{ext}'. Supported formats include: PDF, DOCX, TXT, MD, CSV, JSON, PNG, JPG, WEBP, WAV, MP3, M4A, OGG."
+        )
 
     if ext == "pdf":
         extracted_text = extract_text_from_pdf(content)
@@ -139,8 +162,6 @@ async def ingest_file(
     elif ext in ["txt", "md", "csv", "json"]:
         source_type = "document"
         extracted_text = content.decode("utf-8", errors="ignore")
-    else:
-        extracted_text = content.decode("utf-8", errors="ignore")
 
     if not extracted_text.strip():
         raise HTTPException(status_code=400, detail=f"Could not extract text from file: {filename}")
@@ -153,6 +174,10 @@ async def ingest_file(
     )
 
 @router.get("/{workspace_id}/sources", response_model=List[SourceDocument])
-async def list_sources(workspace_id: str):
+async def list_sources(
+    workspace_id: str,
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
     """List all ingested sources for a workspace."""
+    check_workspace_access(workspace_id, current_user)
     return db_client.get_documents_by_workspace(workspace_id)

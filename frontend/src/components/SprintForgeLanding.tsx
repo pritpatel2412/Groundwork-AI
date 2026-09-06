@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../lib/AuthContext';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -17,7 +19,8 @@ import {
   Terminal,
   Database,
   BarChart3,
-  Bot
+  Bot,
+  LogOut
 } from 'lucide-react';
 import { ThreeMeshCanvas } from './ThreeMeshCanvas';
 import { WCharText } from './WCharText';
@@ -29,6 +32,9 @@ interface SprintForgeLandingProps {
 }
 
 export const SprintForgeLanding: React.FC<SprintForgeLandingProps> = ({ onOpenCopilot }) => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
   const [navScrolled, setNavScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [bloomOffset, setBloomOffset] = useState({ x: 0, y: 0 });
@@ -97,8 +103,12 @@ export const SprintForgeLanding: React.FC<SprintForgeLandingProps> = ({ onOpenCo
     if (!emailInput.trim()) return;
     setSubmittedEmail(true);
     setTimeout(() => {
-      onOpenCopilot();
-    }, 600);
+      if (user) {
+        navigate('/dashboard');
+      } else {
+        navigate(`/signup?email=${encodeURIComponent(emailInput.trim())}`);
+      }
+    }, 400);
   };
 
   return (
@@ -162,19 +172,46 @@ export const SprintForgeLanding: React.FC<SprintForgeLandingProps> = ({ onOpenCo
             </div>
 
             {/* Nav CTA Buttons */}
-            <div className="flex items-center gap-2.5">
-              <button
-                onClick={onOpenCopilot}
-                className="px-4 py-2 rounded-full bg-[#232427] hover:bg-[#171719] text-white text-xs font-semibold tracking-tight transition flex items-center gap-1.5 shadow-sm cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-[#E34A32]" strokeWidth={1.5} />
-                <span>Open Copilot</span>
-              </button>
+            <div className="flex items-center gap-1.5 sm:gap-2.5">
+              {user ? (
+                <>
+                  <Link
+                    to="/dashboard"
+                    className="hidden sm:flex px-4 py-2 rounded-full bg-[#232427] hover:bg-[#171719] text-white text-xs font-semibold tracking-tight transition items-center gap-1.5 shadow-sm hover:shadow-md cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#E34A32]" strokeWidth={1.5} />
+                    <span>Dashboard</span>
+                  </Link>
+                  <button
+                    onClick={() => signOut()}
+                    className="hidden md:inline-flex px-3.5 py-2 rounded-full bg-white/70 hover:bg-white text-xs text-[#55575c] hover:text-[#232427] border border-black/5 transition cursor-pointer font-medium"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="hidden md:inline-flex px-4 py-2 rounded-full bg-white/70 hover:bg-white text-[#232427] text-xs font-semibold tracking-tight border border-black/5 transition shadow-xs cursor-pointer hover:shadow-sm"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="hidden sm:flex px-4 py-2 rounded-full bg-[#232427] hover:bg-[#171719] text-white text-xs font-semibold tracking-tight transition items-center gap-1.5 shadow-sm hover:shadow-md cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#E34A32]" strokeWidth={1.5} />
+                    <span>Get Started</span>
+                  </Link>
+                </>
+              )}
 
               <button
                 id="menuBtn"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 rounded-full bg-white/70 border border-black/5 text-[#232427] cursor-pointer"
+                className="md:hidden p-2 rounded-full bg-white/70 hover:bg-white border border-black/5 text-[#232427] cursor-pointer shadow-xs"
+                aria-label="Toggle Navigation Menu"
               >
                 {mobileMenuOpen ? <X className="w-4 h-4" strokeWidth={1.5} /> : <Menu className="w-4 h-4" strokeWidth={1.5} />}
               </button>
@@ -192,16 +229,46 @@ export const SprintForgeLanding: React.FC<SprintForgeLandingProps> = ({ onOpenCo
               <a href="#work" onClick={() => setMobileMenuOpen(false)} className="py-1 text-[#55575c] hover:text-[#232427]">Case Studies</a>
               <a href="#packages" onClick={() => setMobileMenuOpen(false)} className="py-1 text-[#55575c] hover:text-[#232427]">Packages</a>
               <a href="#studio" onClick={() => setMobileMenuOpen(false)} className="py-1 text-[#55575c] hover:text-[#232427]">Studio</a>
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onOpenCopilot();
-                }}
-                className="w-full mt-2 py-2.5 rounded-xl bg-[#E34A32] text-white font-semibold text-xs flex items-center justify-center gap-2"
-              >
-                <span>Launch Groundwork Copilot</span>
-                <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
-              </button>
+
+              {user ? (
+                <>
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full mt-2 py-2.5 rounded-xl bg-[#232427] text-white font-semibold text-xs flex items-center justify-center gap-2"
+                  >
+                    <span>Go to Dashboard</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-[#E34A32]" strokeWidth={1.5} />
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      signOut();
+                    }}
+                    className="w-full py-2 rounded-xl text-[#55575c] text-xs font-medium border border-black/10"
+                  >
+                    Sign Out ({user.email})
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full py-2.5 rounded-xl bg-[#F4F5F5] text-[#232427] font-semibold text-xs flex items-center justify-center"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/signup"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full py-2.5 rounded-xl bg-[#232427] text-white font-semibold text-xs flex items-center justify-center gap-2"
+                  >
+                    <span>Get Started Free</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-[#E34A32]" strokeWidth={1.5} />
+                  </Link>
+                </>
+              )}
             </div>
           )}
 
@@ -248,13 +315,23 @@ export const SprintForgeLanding: React.FC<SprintForgeLandingProps> = ({ onOpenCo
 
             {/* Hero CTA group */}
             <div data-rise className="flex flex-col sm:flex-row items-center gap-3.5 w-full sm:w-auto">
-              <button
-                onClick={onOpenCopilot}
-                className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-[#232427] hover:bg-[#171719] text-white text-sm font-semibold tracking-tight transition flex items-center justify-center gap-2.5 shadow-[0_12px_24px_-8px_rgba(35,36,39,0.3)] cursor-pointer group hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <span>Launch Copilot Blueprint</span>
-                <ArrowRight className="w-4 h-4 text-[#E34A32] group-hover:translate-x-1 transition-transform" strokeWidth={1.5} />
-              </button>
+              {user ? (
+                <Link
+                  to="/dashboard"
+                  className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-[#232427] hover:bg-[#171719] text-white text-sm font-semibold tracking-tight transition flex items-center justify-center gap-2.5 shadow-[0_12px_24px_-8px_rgba(35,36,39,0.3)] cursor-pointer group hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <span>Go to Dashboard</span>
+                  <ArrowRight className="w-4 h-4 text-[#E34A32] group-hover:translate-x-1 transition-transform" strokeWidth={1.5} />
+                </Link>
+              ) : (
+                <Link
+                  to="/signup"
+                  className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-[#232427] hover:bg-[#171719] text-white text-sm font-semibold tracking-tight transition flex items-center justify-center gap-2.5 shadow-[0_12px_24px_-8px_rgba(35,36,39,0.3)] cursor-pointer group hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <span>Launch Copilot Blueprint</span>
+                  <ArrowRight className="w-4 h-4 text-[#E34A32] group-hover:translate-x-1 transition-transform" strokeWidth={1.5} />
+                </Link>
+              )}
 
               <a
                 href="#packages"

@@ -8,25 +8,29 @@ _model = None
 def _deterministic_embed(text: str, dim: int = 384) -> List[float]:
     """
     Fast, deterministic, normalized 384-dimensional vector generator.
-    Produces high-fidelity semantic cosine clustering based on word n-grams and tokens.
+    Produces semantic cosine similarity based on word unigrams and bigrams.
     Guarantees zero-network-dependency, $0 cost, and sub-millisecond execution.
     """
-    tokens = text.lower().split()
+    import re
+    tokens = re.findall(r'\b\w+\b', text.lower())
+    if not tokens:
+        return [0.0] * dim
+
     vec = [0.0] * dim
+    for tok in tokens:
+        h = int(hashlib.md5(tok.encode("utf-8")).hexdigest(), 16)
+        idx = h % dim
+        sign = 1.0 if ((h >> 8) & 1) else -1.0
+        vec[idx] += sign
 
-    for i, tok in enumerate(tokens):
-        h = hashlib.sha256(tok.encode("utf-8")).digest()
-        for idx in range(min(16, dim)):
-            dim_idx = (h[idx % len(h)] + idx * 23) % dim
-            val = float(h[idx % len(h)] - 128) / 128.0
-            vec[dim_idx] += val
+    # Bigrams for phrase preservation
+    for i in range(len(tokens) - 1):
+        bigram = f"{tokens[i]}_{tokens[i+1]}"
+        h = int(hashlib.md5(bigram.encode("utf-8")).hexdigest(), 16)
+        idx = h % dim
+        sign = 1.0 if ((h >> 8) & 1) else -1.0
+        vec[idx] += sign * 1.5
 
-    # Add whole text signature
-    full_h = hashlib.sha256(text.encode("utf-8")).digest()
-    for j in range(dim):
-        vec[j] += float(full_h[j % len(full_h)] - 128) / 256.0
-
-    # L2 Normalize
     norm = math.sqrt(sum(x * x for x in vec)) or 1.0
     return [x / norm for x in vec]
 

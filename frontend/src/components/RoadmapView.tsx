@@ -3,6 +3,7 @@ import { Calendar, DollarSign, Target, CheckCircle2, TrendingUp, Clock, ShieldCh
 import { api, Claim } from '../lib/api';
 import { useAppStore } from '../lib/store';
 import { ClaimChip } from './ClaimChip';
+import { ContradictionWarningBanner } from './ContradictionWarningBanner';
 
 export const RoadmapView: React.FC = () => {
   const { currentWorkspace } = useAppStore();
@@ -36,6 +37,7 @@ export const RoadmapView: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
+      <ContradictionWarningBanner artifactName="Roadmap & Estimate" />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-black/5">
         <div>
           <div className="flex items-center gap-2 mb-1">

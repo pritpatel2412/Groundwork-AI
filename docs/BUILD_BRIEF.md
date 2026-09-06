@@ -369,10 +369,11 @@ Client wrapper pattern (`backend/app/llm_clients/sarvam_client.py`): a thin `req
 
 ## 7. DEMO DATA (BUILD THIS BEFORE ANY AGENT CODE — SEE `PRD.md` FR-DEMO-01–04)
 
-Create three synthetic, fictional document sets in `/demo_data`:
+Create four document sets in `/demo_data`:
 1. `normal_case/` — one clean SOP describing a simple approval workflow (e.g., "purchase requests under $1,000 are auto-approved; above that, they require manager sign-off").
 2. `difficult_case/` — a messy transcript-style text file that **contradicts itself** on a specific number (e.g., one paragraph says the threshold is $1,000, another says $5,000) — this is what produces the demo's best moment (the contradiction-flagging UI).
 3. `edge_case/` — a deliberately lower-quality "scanned" image (render a screenshot of text at low resolution, or add visual noise) to exercise the OCR fallback path.
+4. `real_world_case/` — `purch-po-vendor.pdf` (Cornell University Purchasing & Vendor SOP, 23 dense pages, 27,186 chars). Exercises Map-Reduce coverage RAG, dense domain extraction across vendor profile types, W-9/tax compliance, APO threshold routing workflows, KFS ERP integration, and multi-entity ERD generation with zero fallback boilerplate.
 
 `backend/scripts/seed_demo_data.py` should create a workspace and ingest these automatically, so the whole team can reset to a known-good demo state at any time without re-uploading files by hand.
 
@@ -383,12 +384,13 @@ Create three synthetic, fictional document sets in `/demo_data`:
 - [ ] Upload `normal_case/` → full pipeline runs → all five artifacts render → every claim has a status
 - [ ] Upload `difficult_case/` → the contradiction is surfaced explicitly in the Requirements view, not silently resolved
 - [ ] Upload `edge_case/` → OCR extracts usable text (Tesseract first, Sarvam fallback if needed)
+- [ ] Ingest `real_world_case/purch-po-vendor.pdf` → Map-Reduce coverage extraction produces > 20 grounded requirements (typically 50-100+), 100% with chunk citations → ERD contains `VENDOR` entity (never generic `USER/REQUEST/RESPONSE`) → Architecture diagram contains domain concepts (vendor intake, approval routing, W-9 compliance, ERP)
 - [ ] Click at least one Verified, one Inferred, and one Unsupported claim in the UI and confirm the citation panel shows correct, matching source text
 - [ ] Kill the Groq API key temporarily and confirm the router falls back to NVIDIA without the app crashing (tests the resilience story you'll state in Q&A)
 - [ ] Confirm nothing exports without passing through the Verifier stage first
 - [ ] Confirm no API key appears in any committed file or console log
 
-**Simple free-tier quota discipline during development:** cache LLM responses for the three fixed demo datasets locally (a dict keyed by a hash of the input + agent name is enough) so repeated rehearsal runs don't burn Groq/NVIDIA free-tier quota unnecessarily. Do not cache in a way that hides real pipeline bugs — only cache the external LLM call, not your own business logic.
+**Simple free-tier quota discipline during development:** cache LLM responses for the demo datasets locally (a dict keyed by a hash of the input + agent name is enough) so repeated rehearsal runs don't burn Groq/NVIDIA free-tier quota unnecessarily. Do not cache in a way that hides real pipeline bugs — only cache the external LLM call, not your own business logic.
 
 ---
 

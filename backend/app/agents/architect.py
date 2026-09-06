@@ -10,69 +10,50 @@ class ArchitectAgent:
     (BUILD_BRIEF.md §4.4, CLAUDE.md §2.5)
     """
     def run(self, requirements: List[Claim]) -> ArchitectOutput:
-        req_context = "\n".join([f"- [Req ID: {r.id}] {r.text}" for r in requirements[:10]])
+        if not requirements:
+            raise ValueError("Cannot design architecture without grounded business requirements.")
+
+        req_context = "\n".join([f"- [Req ID: {r.id}] {r.text}" for r in requirements[:16]])
 
         system_prompt = (
-            "You are a Solution Architect. Given the validated business requirements, design the technical solution architecture.\n"
+            "You are a Solution Architect. Given validated business requirements, design the technical solution architecture.\n"
             "Rules:\n"
             "1. Generate a clean, syntactically valid Mermaid flowchart (graph TD or graph LR).\n"
             "2. For each architectural decision, specify if it is directly verified from a requirement ID or inferred.\n"
-            "3. Output strict JSON with keys:\n"
-            "   - 'diagram': string containing only Mermaid syntax (e.g. 'graph TD\\n  Client[Web Client] --> Gateway[API Gateway]\\n ...')\n"
+            "3. Base all components, services, data stores, and workflows STRICTLY on the domain concepts in the provided requirements "
+            "(e.g., vendor directory/lookup, approval routing engines, W-9/tax compliance checks, external ERP/KFS integrations). "
+            "Do NOT output a generic textbook 3-tier template (Client/Gateway/Auth/DB).\n"
+            "4. Output strict JSON with keys:\n"
+            "   - 'diagram': string containing only Mermaid syntax starting with 'graph TD' or 'graph LR'\n"
             "   - 'decisions': list of objects with {'text': str, 'status': 'verified'|'inferred', 'requirement_ids': [str], 'confidence': float}\n"
         )
 
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Requirements:\n{req_context}"}
+            {"role": "user", "content": f"Domain Requirements:\n{req_context}"}
         ]
 
-        raw = call_llm(messages, purpose="generate", temperature=0.1)
+        raw = call_llm(messages, purpose="generate", temperature=0.1, json_mode=True)
 
         try:
+            import re
             cleaned = raw.strip()
             if "```json" in cleaned:
                 cleaned = cleaned.split("```json")[1].split("```")[0].strip()
             elif "```" in cleaned:
                 cleaned = cleaned.split("```")[1].split("```")[0].strip()
+            first_brace = cleaned.find("{")
+            last_brace = cleaned.rfind("}")
+            if first_brace != -1 and last_brace != -1:
+                cleaned = cleaned[first_brace:last_brace + 1]
+            cleaned = re.sub(r',\s*([\]}])', r'\1', cleaned)
             data = json.loads(cleaned)
-        except Exception:
-            # Fallback robust architecture
-            data = {
-                "diagram": (
-                    "graph TD\n"
-                    "    Client[Client Web App] --> Gateway[API Gateway / Auth]\n"
-                    "    Gateway --> Service[Core Transformation Service]\n"
-                    "    Service --> DB[(PostgreSQL + pgvector)]\n"
-                    "    Service --> LLM[LLM Router - Groq & NVIDIA NIM]\n"
-                    "    Service --> Worker[Async Worker / Task Queue]"
-                ),
-                "decisions": [
-                    {
-                        "text": "API Gateway manages authenticated routing and rate limits",
-                        "status": "inferred",
-                        "requirement_ids": [],
-                        "confidence": 0.85
-                    },
-                    {
-                        "text": "PostgreSQL with vector store handles metadata and source chunk embeddings",
-                        "status": "inferred",
-                        "requirement_ids": [],
-                        "confidence": 0.9
-                    }
-                ]
-            }
+        except Exception as e:
+            raise RuntimeError(f"ArchitectAgent failed to parse LLM JSON: {e}. Raw response snippet: {raw[:300]}")
 
-        # Validate Mermaid diagram starts with graph or flowchart
         diagram = data.get("diagram", "")
-        if not any(diagram.strip().startswith(k) for k in ["graph", "flowchart", "subgraph"]):
-            diagram = (
-                "graph TD\n"
-                "    UI[Web Frontend] --> API[FastAPI Server]\n"
-                "    API --> Pipeline[Agent Orchestration Pipeline]\n"
-                "    Pipeline --> VectorStore[(Vector Store)]\n"
-                "    Pipeline --> LLMProviders[Groq / NVIDIA NIM]"
-            )
+        if not diagram or not any(diagram.strip().startswith(k) for k in ["graph", "flowchart", "subgraph"]):
+            raise RuntimeError(f"ArchitectAgent failed to generate valid Mermaid diagram syntax. Raw diagram snippet: {diagram[:200]}")
 
         decisions: List[ArchitectureDecision] = []
         claims: List[Claim] = []

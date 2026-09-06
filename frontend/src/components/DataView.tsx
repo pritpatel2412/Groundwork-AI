@@ -4,6 +4,7 @@ import { Database, Server, CheckCircle2, Code2, Copy, Check } from 'lucide-react
 import { api, Claim } from '../lib/api';
 import { useAppStore } from '../lib/store';
 import { ClaimChip } from './ClaimChip';
+import { ContradictionWarningBanner } from './ContradictionWarningBanner';
 
 export const DataView: React.FC = () => {
   const { currentWorkspace } = useAppStore();
@@ -61,6 +62,7 @@ export const DataView: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
+      <ContradictionWarningBanner artifactName="Data & API" />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-black/5">
         <div>
           <div className="flex items-center gap-2 mb-1">

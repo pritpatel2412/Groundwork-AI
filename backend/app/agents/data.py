@@ -9,85 +9,52 @@ class DataAgent:
     (BUILD_BRIEF.md §4.4, CLAUDE.md §2.5)
     """
     def run(self, requirements: List[Claim]) -> DataOutput:
-        req_context = "\n".join([f"- [Req ID: {r.id}] {r.text}" for r in requirements[:8]])
+        if not requirements:
+            raise ValueError("Cannot generate data schemas without grounded business requirements.")
+
+        req_context = "\n".join([f"- [Req ID: {r.id}] {r.text}" for r in requirements[:16]])
 
         system_prompt = (
-            "You are a Senior Data and API Architect. Given business requirements, design:\n"
-            "1. A clean, valid Mermaid ER Diagram string (starting with 'erDiagram\\n')\n"
-            "2. Entity definitions with attributes\n"
-            "3. REST API endpoints with HTTP method, path, and summary\n\n"
+            "You are a Senior Data and API Architect. Given domain business requirements, design:\n"
+            "1. A clean, valid Mermaid ER Diagram string (starting with 'erDiagram\\n') modeling the domain entities.\n"
+            "2. Entity definitions with attributes and relationships reflecting the actual domain concepts in the requirements.\n"
+            "3. 6 to 8 core REST API endpoints with HTTP method, path, and summary directly linked to requirement IDs.\n\n"
+            "CRITICAL: Do NOT output generic USER/REQUEST/RESPONSE entities. Model the actual domain entities, attributes, and "
+            "relationships directly specified or implied by the requirements (e.g., VENDOR, VENDOR_ADDRESS, TAX_PROFILE, "
+            "PURCHASE_ORDER, APPROVAL_RECORD, CONTRACT).\n"
+            "CRITICAL: Output ONLY valid raw JSON. Do NOT write any reasoning, thinking, preambles, or explanations before or after the JSON.\n\n"
             "Return strict JSON with keys:\n"
-            "- 'erd_mermaid': string containing 'erDiagram\\n  USER ||--o{ REQUEST : submits\\n ...'\n"
+            "- 'erd_mermaid': string containing valid Mermaid syntax starting with 'erDiagram\\n'\n"
             "- 'entities': list of {'name': str, 'attributes': [{'name': str, 'type': str}]}\n"
             "- 'endpoints': list of {'method': 'GET'|'POST'|'PUT'|'DELETE', 'path': str, 'summary': str, 'requirement_ids': [str]}\n"
         )
 
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Requirements:\n{req_context}"}
+            {"role": "user", "content": f"Domain Requirements:\n{req_context}"}
         ]
 
-        raw = call_llm(messages, purpose="generate", temperature=0.1)
+        raw = call_llm(messages, purpose="generate", temperature=0.1, json_mode=True)
 
         try:
+            import re
             cleaned = raw.strip()
             if "```json" in cleaned:
                 cleaned = cleaned.split("```json")[1].split("```")[0].strip()
             elif "```" in cleaned:
                 cleaned = cleaned.split("```")[1].split("```")[0].strip()
+            first_brace = cleaned.find("{")
+            last_brace = cleaned.rfind("}")
+            if first_brace != -1 and last_brace != -1:
+                cleaned = cleaned[first_brace:last_brace + 1]
+            cleaned = re.sub(r',\s*([\]}])', r'\1', cleaned)
             data = json.loads(cleaned)
-        except Exception:
-            data = {
-                "erd_mermaid": (
-                    "erDiagram\n"
-                    "  WORKFLOW_REQUEST ||--o{ AUDIT_LOG : tracks\n"
-                    "  WORKFLOW_REQUEST {\n"
-                    "    uuid id PK\n"
-                    "    string title\n"
-                    "    numeric amount\n"
-                    "    string status\n"
-                    "    timestamp created_at\n"
-                    "  }\n"
-                    "  AUDIT_LOG {\n"
-                    "    uuid id PK\n"
-                    "    uuid request_id FK\n"
-                    "    string action\n"
-                    "    timestamp timestamp\n"
-                    "  }"
-                ),
-                "entities": [
-                    {
-                        "name": "WORKFLOW_REQUEST",
-                        "attributes": [
-                            {"name": "id", "type": "uuid"},
-                            {"name": "amount", "type": "numeric"},
-                            {"name": "status", "type": "string"}
-                        ]
-                    }
-                ],
-                "endpoints": [
-                    {"method": "POST", "path": "/api/requests", "summary": "Submit a new request", "requirement_ids": []},
-                    {"method": "GET", "path": "/api/requests/{id}", "summary": "Get request details", "requirement_ids": []},
-                    {"method": "POST", "path": "/api/requests/{id}/approve", "summary": "Approve request", "requirement_ids": []}
-                ]
-            }
+        except Exception as e:
+            raise RuntimeError(f"DataAgent failed to parse LLM JSON: {e}. Raw response snippet: {raw[:300]}")
 
         erd_mermaid = data.get("erd_mermaid", "")
-        if not erd_mermaid.strip().startswith("erDiagram"):
-            erd_mermaid = (
-                "erDiagram\n"
-                "  REQUEST ||--o{ APPROVAL : has\n"
-                "  REQUEST {\n"
-                "    uuid id PK\n"
-                "    numeric amount\n"
-                "    string status\n"
-                "  }\n"
-                "  APPROVAL {\n"
-                "    uuid id PK\n"
-                "    string approver\n"
-                "    boolean approved\n"
-                "  }"
-            )
+        if not erd_mermaid or not erd_mermaid.strip().startswith("erDiagram"):
+            raise RuntimeError(f"DataAgent failed to generate valid Mermaid erDiagram syntax. Raw snippet: {erd_mermaid[:200]}")
 
         entities: List[EREntity] = []
         for ent in data.get("entities", []):

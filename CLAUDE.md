@@ -21,6 +21,7 @@ Do not violate these, even under time pressure, even if a shortcut looks temptin
 4. **Nothing auto-publishes.** Every export or "final" action requires an explicit human confirmation step. There is no code path where AI output reaches an export file without passing through the Verifier stage first.
 5. **Diagrams are text, not images.** Architecture, workflow, and ER diagrams are generated as Mermaid syntax and rendered client-side — never as generated raster images. This keeps them editable, diffable, and exportable.
 6. **Free-tier-first.** This project intentionally uses only free-tier APIs (see §4). Do not introduce a paid API or a paid-only SDK feature without flagging it clearly first — the whole point of the stack choice is a $0 hackathon build.
+7. **Fail-closed on ungrounded requirements.** If the Analyst agent produces zero requirements, or produces requirements with zero citations, the pipeline must halt after that stage — it must not proceed to Architect/UX/Data/Estimator. The user must see an explicit failure state ('Could not extract grounded requirements from your source material — try uploading more detail, or a different format') instead of a generated blueprint. No artifact, anywhere in this system, may render as if it's grounded when it isn't, even in a degraded/fallback form.
 
 ## 3. Tech stack (see `/docs/BUILD_BRIEF.md` for full justification and setup steps)
 

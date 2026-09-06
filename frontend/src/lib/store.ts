@@ -32,9 +32,11 @@ interface AppState {
 const DEFAULT_STAGES: StageTrace[] = [
   { id: 'discovery', name: 'Discovery Agent', label: 'Domain & Actor Structuring', status: 'pending', message: 'Waiting to start', claimsCount: 0 },
   { id: 'analyst', name: 'Analyst Agent', label: 'Requirements & Contradiction Audit', status: 'pending', message: 'Cite-or-abstain contract enforcement', claimsCount: 0 },
-  { id: 'architect_ux_data', name: 'Synthesis Trio', label: 'Architecture, Wireframes & Data (Parallel)', status: 'pending', message: 'Parallel artifact design', claimsCount: 0 },
-  { id: 'estimator', name: 'Estimator Agent', label: 'Delivery Range & Benchmark Calibration', status: 'pending', message: '3-point estimation calculation', claimsCount: 0 },
-  { id: 'verifier', name: 'Verifier Agent (NVIDIA)', label: 'Independent Claim-by-Claim Truth Audit', status: 'pending', message: 'Secondary model fact-checking', claimsCount: 0 },
+  { id: 'architect', name: 'Solution Architect', label: 'Architecture & System Topology', status: 'pending', message: 'Mermaid flowchart generation', claimsCount: 0 },
+  { id: 'ux', name: 'UX Designer', label: 'Interactive Wireframe Schemas', status: 'pending', message: 'Component hierarchy & layouts', claimsCount: 0 },
+  { id: 'data', name: 'Data Engineer', label: 'Entity-Relationship & Schemas', status: 'pending', message: 'Postgres & vector store schemas', claimsCount: 0 },
+  { id: 'estimator', name: 'Estimator Agent', label: 'Delivery Range Calibration', status: 'pending', message: '3-point estimation calculation', claimsCount: 0 },
+  { id: 'verifier', name: 'Dual Verifier (NVIDIA NIM)', label: 'Consensus Truth & Grounding Audit', status: 'pending', message: 'Nemotron + Llama consensus check', claimsCount: 0 },
 ];
 
 export const useAppStore = create<AppState>((set) => ({

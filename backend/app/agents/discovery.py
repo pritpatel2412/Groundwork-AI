@@ -31,22 +31,28 @@ class DiscoveryAgent:
             }
         ]
 
-        raw_response = call_llm(messages, purpose="generate", temperature=0.1)
+        raw_response = call_llm(messages, purpose="generate", temperature=0.1, json_mode=True)
 
         try:
             # Parse JSON
+            import re
             cleaned = raw_response.strip()
             if "```json" in cleaned:
                 cleaned = cleaned.split("```json")[1].split("```")[0].strip()
             elif "```" in cleaned:
                 cleaned = cleaned.split("```")[1].split("```")[0].strip()
+            first_brace = cleaned.find("{")
+            last_brace = cleaned.rfind("}")
+            if first_brace != -1 and last_brace != -1:
+                cleaned = cleaned[first_brace:last_brace + 1]
+            cleaned = re.sub(r',\s*([\]}])', r'\1', cleaned)
             data = json.loads(cleaned)
-        except Exception:
+        except Exception as e:
             data = {
-                "summary": raw_response[:300],
-                "identified_domains": ["Operations", "Workflow Management"],
-                "key_actors": ["Manager", "Employee"],
-                "extracted_notes": [line.strip() for line in raw_response.split("\n") if line.strip()][:5]
+                "summary": raw_response[:300].strip() if raw_response else "Business discovery context initialized.",
+                "identified_domains": [],
+                "key_actors": [],
+                "extracted_notes": []
             }
 
         claims = []

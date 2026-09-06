@@ -27,6 +27,13 @@ export const ClaimChip: React.FC<ClaimChipProps> = ({ claim, showText = false })
           label: 'INFERRED',
           dot: 'bg-amber-500',
         };
+      case 'contested':
+        return {
+          bg: 'bg-purple-50 hover:bg-purple-100 text-purple-900 border-purple-300 border-dashed shadow-[0_1px_2px_rgba(0,0,0,0.04)]',
+          icon: <HelpCircle className="w-3.5 h-3.5 text-purple-600" strokeWidth={1.5} />,
+          label: 'CONTESTED',
+          dot: 'bg-purple-600',
+        };
       case 'unsupported':
       default:
         return {

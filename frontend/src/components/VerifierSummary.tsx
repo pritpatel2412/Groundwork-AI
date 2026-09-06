@@ -8,7 +8,7 @@ export const VerifierSummary: React.FC = () => {
   const { currentWorkspace } = useAppStore();
   const [summary, setSummary] = useState<ClaimsSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'verified' | 'inferred' | 'unsupported'>('all');
+  const [filter, setFilter] = useState<'all' | 'verified' | 'inferred' | 'contested' | 'unsupported'>('all');
 
   const fetchSummary = async () => {
     if (!currentWorkspace) return;
@@ -44,17 +44,17 @@ export const VerifierSummary: React.FC = () => {
               Independent Verifier Ledger & Truth Gauge
             </h2>
             <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20">
-              AUDIT PROTOCOL
+              DUAL-MODEL CONSENSUS
             </span>
           </div>
           <p className="text-xs text-[#55575c]">
-            Dual-model adversarial verification executed independently by NVIDIA NIM (Nemotron-3-Super).
+            Adversarial consensus verification executed independently across two NVIDIA NIM model families (Nemotron & Llama).
           </p>
         </div>
 
         <div className="flex items-center gap-2 text-xs bg-white border border-black/10 px-3.5 py-2 rounded-full shadow-xs">
           <Bot className="w-4 h-4 text-[#E34A32]" strokeWidth={1.5} />
-          <span className="text-[#232427] font-mono text-[11px] font-semibold">NVIDIA NIM: nemotron-3-super</span>
+          <span className="text-[#232427] font-mono text-[11px] font-semibold">NVIDIA NIM: Nemotron + Llama</span>
         </div>
       </div>
 
@@ -67,13 +67,13 @@ export const VerifierSummary: React.FC = () => {
       ) : (
         <>
           {/* Truth Metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div className="p-5 rounded-2xl bg-white border border-black/10 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_14px_28px_-14px_rgba(35,36,39,0.08)]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="p-4 rounded-2xl bg-white border border-black/10 shadow-xs">
               <span className="text-[10px] font-mono text-[#55575c] uppercase">Grounding Ratio</span>
-              <p className="text-3xl font-bold text-[#232427] mt-1">
+              <p className="text-2xl font-bold text-[#232427] mt-1">
                 {Math.round((summary.verified_count / (summary.total_claims || 1)) * 100)}%
               </p>
-              <div className="w-full bg-[#F4F5F5] h-1.5 rounded-full mt-3 overflow-hidden">
+              <div className="w-full bg-[#F4F5F5] h-1.5 rounded-full mt-2.5 overflow-hidden">
                 <div
                   className="bg-[#E34A32] h-full rounded-full"
                   style={{ width: `${(summary.verified_count / (summary.total_claims || 1)) * 100}%` }}
@@ -81,21 +81,27 @@ export const VerifierSummary: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-5 rounded-2xl bg-white border border-black/10 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_14px_28px_-14px_rgba(35,36,39,0.08)]">
+            <div className="p-4 rounded-2xl bg-white border border-black/10 shadow-xs">
               <span className="text-[10px] font-mono text-emerald-800 uppercase">Verified Claims</span>
-              <p className="text-3xl font-bold text-emerald-700 mt-1">{summary.verified_count}</p>
-              <p className="text-[11px] text-[#55575c] mt-1">Directly grounded in SOP chunks</p>
+              <p className="text-2xl font-bold text-emerald-700 mt-1">{summary.verified_count}</p>
+              <p className="text-[11px] text-[#55575c] mt-1">Both models agree verified</p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-white border border-black/10 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_14px_28px_-14px_rgba(35,36,39,0.08)]">
+            <div className="p-4 rounded-2xl bg-white border border-black/10 shadow-xs">
               <span className="text-[10px] font-mono text-amber-800 uppercase">Inferred Logic</span>
-              <p className="text-3xl font-bold text-amber-700 mt-1">{summary.inferred_count}</p>
-              <p className="text-[11px] text-[#55575c] mt-1">Derived from contextual synthesis</p>
+              <p className="text-2xl font-bold text-amber-700 mt-1">{summary.inferred_count}</p>
+              <p className="text-[11px] text-[#55575c] mt-1">Calibrated cosine similarity</p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-white border border-black/10 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_14px_28px_-14px_rgba(35,36,39,0.08)]">
+            <div className="p-4 rounded-2xl bg-white border border-purple-200 bg-purple-50/20 shadow-xs">
+              <span className="text-[10px] font-mono text-purple-800 uppercase">Contested Claims</span>
+              <p className="text-2xl font-bold text-purple-700 mt-1">{summary.contested_count || 0}</p>
+              <p className="text-[11px] text-[#55575c] mt-1">Model disagreement</p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white border border-black/10 shadow-xs">
               <span className="text-[10px] font-mono text-[#E34A32] uppercase">Ungrounded Claims</span>
-              <p className="text-3xl font-bold text-[#E34A32] mt-1">{summary.unsupported_count}</p>
+              <p className="text-2xl font-bold text-[#E34A32] mt-1">{summary.unsupported_count}</p>
               <p className="text-[11px] text-[#55575c] mt-1">Blocked under Cite-or-Abstain</p>
             </div>
           </div>
@@ -108,7 +114,7 @@ export const VerifierSummary: React.FC = () => {
               </h3>
 
               <div className="flex items-center gap-1.5 bg-[#F4F5F5] border border-black/5 p-1 rounded-full text-xs">
-                {(['all', 'verified', 'inferred', 'unsupported'] as const).map((mode) => (
+                {(['all', 'verified', 'inferred', 'contested', 'unsupported'] as const).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setFilter(mode)}

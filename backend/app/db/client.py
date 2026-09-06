@@ -10,6 +10,9 @@ from app.models.schemas import (
 )
 
 # Load environment
+env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+if os.path.exists(env_path):
+    load_dotenv(env_path)
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
@@ -82,12 +85,16 @@ class DBClient:
             print(f"[DBClient] Error saving local db: {e}")
 
     # Workspaces
-    def create_workspace(self, name: str) -> Workspace:
+    def create_workspace(self, name: str, user_id: Optional[str] = None) -> Workspace:
         self._load_local_db()
-        ws = Workspace(name=name)
-        if self.supabase:
+        ws = Workspace(name=name, user_id=user_id)
+        if self.supabase and user_id:
             try:
-                res = self.supabase.table("workspaces").insert({"id": ws.id, "name": ws.name}).execute()
+                res = self.supabase.table("workspaces").insert({
+                    "id": ws.id,
+                    "name": ws.name,
+                    "user_id": user_id
+                }).execute()
                 if res.data:
                     ws = Workspace(**res.data[0])
             except Exception:
@@ -96,27 +103,40 @@ class DBClient:
         self._save_local_db()
         return ws
 
-    def list_workspaces(self) -> List[Workspace]:
+    def list_workspaces(self, user_id: Optional[str] = None) -> List[Workspace]:
         self._load_local_db()
-        if self.supabase:
+        if self.supabase and user_id:
             try:
-                res = self.supabase.table("workspaces").select("*").order("created_at", desc=True).execute()
+                res = self.supabase.table("workspaces").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
                 if res.data:
                     return [Workspace(**row) for row in res.data]
             except Exception:
                 pass
+        
+        # In-memory / local storage user-scoping
+        if user_id:
+            return [w for w in self._workspaces.values() if w.user_id == user_id]
         return list(self._workspaces.values())
 
-    def get_workspace(self, workspace_id: str) -> Optional[Workspace]:
+    def get_workspace(self, workspace_id: str, user_id: Optional[str] = None) -> Optional[Workspace]:
         self._load_local_db()
-        if self.supabase:
+        ws = self._workspaces.get(workspace_id)
+        if self.supabase and not ws:
             try:
-                res = self.supabase.table("workspaces").select("*").eq("id", workspace_id).execute()
+                query = self.supabase.table("workspaces").select("*").eq("id", workspace_id)
+                if user_id:
+                    query = query.eq("user_id", user_id)
+                res = query.execute()
                 if res.data:
-                    return Workspace(**res.data[0])
+                    ws = Workspace(**res.data[0])
+                    self._workspaces[ws.id] = ws
             except Exception:
                 pass
-        return self._workspaces.get(workspace_id)
+        
+        # Enforce user boundary: if workspace has a user_id and it doesn't match, deny access
+        if ws and user_id and ws.user_id and ws.user_id != user_id:
+            return None
+        return ws
 
     # Documents
     def save_source_document(self, workspace_id: str, filename: str, raw_text: str, source_type: str) -> SourceDocument:
