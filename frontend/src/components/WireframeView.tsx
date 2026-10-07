@@ -43,34 +43,38 @@ export const WireframeView: React.FC = () => {
       <ContradictionWarningBanner artifactName="Wireframe" />
 
       {/* Header & Screen Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-black/5">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-xl font-bold text-[#232427] flex items-center gap-2 font-sans tracking-tight">
-              <Layout className="w-5 h-5 text-[#E34A32]" strokeWidth={1.5} />
-              Interactive Wireframe Canvas
-            </h2>
-            <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20">
-              SYNTHESIZED
-            </span>
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-black/5">
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
+          <div className="p-2.5 rounded-xl bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20 shadow-xs shrink-0 mt-0.5 sm:mt-0">
+            <Layout className="w-5 h-5 text-[#E34A32]" strokeWidth={1.5} />
           </div>
-          <p className="text-xs text-[#55575c]">
-            Grounded low-fidelity interface screens mapped directly to validated enterprise requirements.
-          </p>
+          <div className="min-w-0">
+            <div className="flex items-center flex-wrap gap-2 mb-0.5">
+              <h2 className="text-lg sm:text-xl font-bold text-[#232427] font-sans tracking-tight">
+                Interactive Wireframe Canvas
+              </h2>
+              <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20 shrink-0">
+                SYNTHESIZED
+              </span>
+            </div>
+            <p className="text-xs text-[#55575c]">
+              Grounded low-fidelity interface screens mapped directly to validated enterprise requirements.
+            </p>
+          </div>
         </div>
 
         {screens.length > 1 && (
-          <div className="flex flex-wrap gap-1.5 bg-white border border-black/10 p-1.5 rounded-full shadow-xs">
+          <div className="flex items-center gap-1.5 p-1.5 bg-white border border-black/10 rounded-2xl shadow-xs overflow-x-auto custom-scrollbar max-w-full shrink-0 self-start lg:self-center">
             {screens.map((s: any, idx: number) => {
               const name = s.screen_name || s.title || `Screen 0${idx + 1}`;
               return (
                 <button
                   key={idx}
                   onClick={() => setActiveScreenIndex(idx)}
-                  className={`px-3.5 py-1 rounded-full text-xs font-semibold tracking-tight transition cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold tracking-tight transition whitespace-nowrap cursor-pointer shrink-0 ${
                     activeScreenIndex === idx
                       ? 'bg-[#232427] text-white shadow-xs'
-                      : 'text-[#55575c] hover:text-[#232427]'
+                      : 'text-[#55575c] hover:text-[#232427] hover:bg-black/5'
                   }`}
                 >
                   {name}

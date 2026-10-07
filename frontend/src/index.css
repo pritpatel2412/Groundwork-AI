@@ -58,23 +58,63 @@
   transform: translateY(0);
 }
 
-/* Custom subtle scrollbar */
+/* Custom visible styled scrollbars */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #F4F5F5;
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #9CA3AF;
+  border-radius: 9999px;
+  border: 2px solid #F4F5F5;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #E34A32;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #9CA3AF #F4F5F5;
+}
+
+/* Global scrollbars enhancement */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #ECEDEE;
+  background: #ECEEEF;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #C8CACD;
+  background: #9CA3AF;
   border-radius: 9999px;
+  border: 2px solid #ECEEEF;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #E34A32;
 }
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #9CA3AF #ECEEEF;
+}
+
+/* Blueprint dot matrix background for interactive diagram canvas */
+.blueprint-grid {
+  background-color: #FDFCFC;
+  background-image: radial-gradient(#CBD0D5 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
+}
+
 
 

@@ -23,6 +23,12 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+export interface CitationSource {
+  chunk_id: string;
+  document_name: string;
+  text: string;
+}
+
 export interface Claim {
   id: string;
   text: string;
@@ -30,13 +36,30 @@ export interface Claim {
   citations: string[];
   confidence: number;
   explanation?: string;
+  citation_sources?: CitationSource[];
 }
 
 export interface Contradiction {
   id: string;
   description: string;
   source_chunk_ids: string[];
+  status?: 'open' | 'resolved';
+  resolution_notes?: string;
 }
+
+export const resolveContradiction = async (workspaceId: string, contradictionId: string, resolution_notes: string) => {
+  const res = await api.post<Contradiction>(`/workspaces/${workspaceId}/contradictions/${contradictionId}/resolve`, {
+    resolution_notes,
+  });
+  return res.data;
+};
+
+export const updateRequirement = async (workspaceId: string, requirementId: string, text: string) => {
+  const res = await api.put<Claim>(`/workspaces/${workspaceId}/requirements/${requirementId}`, {
+    text,
+  });
+  return res.data;
+};
 
 export interface Workspace {
   id: string;

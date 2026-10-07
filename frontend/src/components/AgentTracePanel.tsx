@@ -6,32 +6,32 @@ export const AgentTracePanel: React.FC = () => {
   const { stages, isGenerating } = useAppStore();
 
   return (
-    <div className="bg-white/95 border border-black/10 rounded-2xl p-5 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_12px_28px_-12px_rgba(35,36,39,0.08)] flex flex-col h-full backdrop-blur-xl">
-      <div className="flex items-center justify-between pb-4 border-b border-black/5 mb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20 shadow-xs">
+    <div className="bg-white/95 border border-black/10 rounded-2xl p-4 sm:p-5 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_12px_28px_-12px_rgba(35,36,39,0.08)] flex flex-col h-full backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-2.5 pb-3.5 border-b border-black/5 mb-3.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-2 rounded-xl bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20 shadow-xs shrink-0">
             <Activity className="w-4 h-4 text-[#E34A32]" strokeWidth={1.5} />
           </div>
-          <div>
-            <h3 className="font-bold text-sm text-[#232427] flex items-center gap-2 tracking-tight">
-              Groundwork AI Trace
+          <div className="min-w-0">
+            <h3 className="font-bold text-xs sm:text-sm text-[#232427] flex items-center gap-1.5 tracking-tight truncate">
+              <span className="truncate">Groundwork AI Trace</span>
               {isGenerating && (
-                <span className="flex h-2 w-2 relative">
+                <span className="flex h-2 w-2 relative shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E34A32] opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E34A32]"></span>
                 </span>
               )}
             </h3>
-            <p className="text-[10px] text-[#55575c] font-mono">Cognitive Execution Stream</p>
+            <p className="text-[10px] text-[#55575c] font-mono truncate">Cognitive Execution Stream</p>
           </div>
         </div>
-        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20">
+        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20 shrink-0 whitespace-nowrap">
           SSE • LIVE
         </span>
       </div>
 
       {/* Stages list */}
-      <div className="space-y-2.5 flex-1 overflow-y-auto pr-1">
+      <div className="space-y-2.5 flex-1 overflow-y-auto custom-scrollbar pr-2 min-h-0">
         {stages.map((stage, idx) => {
           const isDone = stage.status === 'done';
           const isRunning = stage.status === 'running';

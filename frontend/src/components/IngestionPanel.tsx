@@ -133,25 +133,29 @@ export const IngestionPanel: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-black/5">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-xl font-bold text-[#232427] flex items-center gap-2 font-sans tracking-tight">
-              <UploadCloud className="w-5 h-5 text-[#E34A32]" strokeWidth={1.5} />
-              Evidence Ingestion Console
-            </h2>
-            <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20">
-              0xVAULT
-            </span>
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
+          <div className="p-2.5 rounded-xl bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20 shadow-xs shrink-0 mt-0.5 sm:mt-0">
+            <UploadCloud className="w-5 h-5 text-[#E34A32]" strokeWidth={1.5} />
           </div>
-          <p className="text-xs text-[#55575c]">
-            Active Workspace: <span className="text-[#232427] font-semibold">{currentWorkspace.name}</span>
-          </p>
+          <div className="min-w-0">
+            <div className="flex items-center flex-wrap gap-2 mb-0.5">
+              <h2 className="text-lg sm:text-xl font-bold text-[#232427] font-sans tracking-tight">
+                Evidence Ingestion Console
+              </h2>
+              <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20 shrink-0">
+                0xVAULT
+              </span>
+            </div>
+            <p className="text-xs text-[#55575c]">
+              Active Workspace: <span className="text-[#232427] font-semibold">{currentWorkspace.name}</span>
+            </p>
+          </div>
         </div>
 
         <button
           onClick={handleTriggerPipeline}
           disabled={isGenerating || sources.length === 0}
-          className="px-6 py-2.5 rounded-full bg-[#232427] hover:bg-[#171719] text-white font-semibold text-xs tracking-tight flex items-center justify-center gap-2 transition disabled:opacity-50 cursor-pointer shadow-md hover:shadow-lg"
+          className="px-5 py-2 rounded-xl bg-[#232427] hover:bg-[#171719] text-white font-semibold text-xs tracking-tight flex items-center justify-center gap-2 transition disabled:opacity-50 cursor-pointer shadow-md hover:shadow-lg shrink-0 self-start sm:self-center"
         >
           <Play className="w-3.5 h-3.5 text-[#E34A32] fill-current" strokeWidth={1.5} />
           <span>{isGenerating ? 'Synthesizing Pipeline...' : 'Synthesize Grounded Blueprint'}</span>

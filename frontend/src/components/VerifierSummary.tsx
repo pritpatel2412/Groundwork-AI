@@ -36,23 +36,27 @@ export const VerifierSummary: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-black/5">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-xl font-bold text-[#232427] flex items-center gap-2 font-sans tracking-tight">
-              <ShieldCheck className="w-5 h-5 text-[#E34A32]" strokeWidth={1.5} />
-              Independent Verifier Ledger & Truth Gauge
-            </h2>
-            <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20">
-              DUAL-MODEL CONSENSUS
-            </span>
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-black/5">
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
+          <div className="p-2.5 rounded-xl bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20 shadow-xs shrink-0 mt-0.5 sm:mt-0">
+            <ShieldCheck className="w-5 h-5 text-[#E34A32]" strokeWidth={1.5} />
           </div>
-          <p className="text-xs text-[#55575c]">
-            Adversarial consensus verification executed independently across two NVIDIA NIM model families (Nemotron & Llama).
-          </p>
+          <div className="min-w-0">
+            <div className="flex items-center flex-wrap gap-2 mb-0.5">
+              <h2 className="text-lg sm:text-xl font-bold text-[#232427] font-sans tracking-tight">
+                Independent Verifier Ledger & Truth Gauge
+              </h2>
+              <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20 shrink-0">
+                DUAL-MODEL CONSENSUS
+              </span>
+            </div>
+            <p className="text-xs text-[#55575c]">
+              Adversarial consensus verification executed independently across two NVIDIA NIM model families (Nemotron & Llama).
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs bg-white border border-black/10 px-3.5 py-2 rounded-full shadow-xs">
+        <div className="flex items-center gap-2 text-xs bg-white border border-black/10 px-3 py-1.5 rounded-xl shadow-xs shrink-0 self-start lg:self-center">
           <Bot className="w-4 h-4 text-[#E34A32]" strokeWidth={1.5} />
           <span className="text-[#232427] font-mono text-[11px] font-semibold">NVIDIA NIM: Nemotron + Llama</span>
         </div>

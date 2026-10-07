@@ -47,19 +47,23 @@ export const ExportPanel: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-black/5">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-xl font-bold text-[#232427] flex items-center gap-2 font-sans tracking-tight">
-              <Download className="w-5 h-5 text-[#E34A32]" strokeWidth={1.5} />
-              Audited Blueprint Export Console
-            </h2>
-            <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20">
-              0xSECURE
-            </span>
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
+          <div className="p-2.5 rounded-xl bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20 shadow-xs shrink-0 mt-0.5 sm:mt-0">
+            <Download className="w-5 h-5 text-[#E34A32]" strokeWidth={1.5} />
           </div>
-          <p className="text-xs text-[#55575c]">
-            Export production-ready architectural artifacts, Mermaid matrices, and OpenAPI specifications.
-          </p>
+          <div className="min-w-0">
+            <div className="flex items-center flex-wrap gap-2 mb-0.5">
+              <h2 className="text-lg sm:text-xl font-bold text-[#232427] font-sans tracking-tight">
+                Audited Blueprint Export Console
+              </h2>
+              <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/20 shrink-0">
+                0xSECURE
+              </span>
+            </div>
+            <p className="text-xs text-[#55575c]">
+              Export production-ready architectural artifacts, Mermaid matrices, and OpenAPI specifications.
+            </p>
+          </div>
         </div>
       </div>
 

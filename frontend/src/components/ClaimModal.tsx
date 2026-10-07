@@ -86,13 +86,31 @@ export const ClaimModal: React.FC = () => {
             </span>
           </div>
           {selectedClaim.citations.length > 0 ? (
-            <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
-              {selectedClaim.citations.map((cid, i) => (
-                <div key={i} className="p-3 rounded-xl bg-[#F4F5F5] border border-black/5 text-xs text-[#232427]">
-                  <span className="text-[10px] font-mono text-[#E34A32] font-semibold block mb-0.5">CHUNK_ID: {cid}</span>
-                  <span className="italic text-[#55575c]">"Referenced in ingested business transformation document"</span>
-                </div>
-              ))}
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {selectedClaim.citation_sources && selectedClaim.citation_sources.length > 0 ? (
+                selectedClaim.citation_sources.map((src, i) => (
+                  <div key={i} className="p-3.5 rounded-xl bg-[#F4F5F5] border border-black/5 text-xs text-[#232427] space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-semibold text-[#E34A32] truncate max-w-[240px]">
+                        {src.document_name}
+                      </span>
+                      <span className="text-[9px] font-mono text-[#55575c]">
+                        Chunk: {src.chunk_id.slice(0, 8)}...
+                      </span>
+                    </div>
+                    <p className="italic text-[#232427] leading-relaxed">
+                      "{src.text}"
+                    </p>
+                  </div>
+                ))
+              ) : (
+                selectedClaim.citations.map((cid, i) => (
+                  <div key={i} className="p-3 rounded-xl bg-[#F4F5F5] border border-black/5 text-xs text-[#232427]">
+                    <span className="text-[10px] font-mono text-[#E34A32] font-semibold block mb-0.5">CHUNK_ID: {cid}</span>
+                    <span className="italic text-[#55575c]">"Referenced in audited source material"</span>
+                  </div>
+                ))
+              )}
             </div>
           ) : (
             <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-[#E34A32] italic">
@@ -103,8 +121,19 @@ export const ClaimModal: React.FC = () => {
 
         {/* Footer actions */}
         <div className="pt-4 border-t border-black/10 flex items-center justify-between">
-          <div className="text-[11px] text-[#55575c] font-mono">
-            Confidence: <span className="font-bold text-[#232427]">{Math.round(selectedClaim.confidence * 100)}%</span>
+          <div className="text-[11px] text-[#55575c] font-mono flex items-center gap-1.5">
+            <span>Calibrated Confidence:</span>
+            <span className={`font-bold px-2 py-0.5 rounded text-[11px] ${
+              selectedClaim.status === 'verified'
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                : selectedClaim.status === 'inferred'
+                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                : selectedClaim.status === 'contested'
+                ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                : 'bg-red-50 text-[#E34A32] border border-red-200'
+            }`}>
+              {Math.round((selectedClaim.confidence || 0.85) * 100)}%
+            </span>
           </div>
           <button
             onClick={() => setSelectedClaim(null)}
