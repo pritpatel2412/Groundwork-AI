@@ -11,11 +11,20 @@ class Claim(BaseModel):
     citations: List[str] = Field(default_factory=list) # source chunk IDs
     confidence: float = 0.0
     explanation: Optional[str] = None
+    citation_sources: Optional[List[Dict[str, Any]]] = None
 
 class Contradiction(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
     description: str
     source_chunk_ids: List[str] = Field(default_factory=list)
+    status: Literal["open", "resolved"] = "open"
+    resolution_notes: Optional[str] = None
+
+class ResolveContradictionRequest(BaseModel):
+    resolution_notes: str
+
+class UpdateRequirementRequest(BaseModel):
+    text: str
 
 class SourceChunk(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))

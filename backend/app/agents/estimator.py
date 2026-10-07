@@ -20,7 +20,7 @@ class EstimatorAgent:
             "You are a Software Engineering Delivery Manager. Estimate implementation timelines.\n"
             "Rules:\n"
             "1. Output a RANGE of weeks: optimistic, realistic, and pessimistic. NEVER a single fixed number.\n"
-            "2. Provide a calibrated reference case comparing directly to scope complexity.\n"
+            "2. Describe the benchmark reference point as an architectural/scope calibration category, NEVER a fabricated proper-noun project name (e.g., 'Comparable in scope to a mid-sized enterprise vendor-management module (~80-120 requirements, 10-15 architectural components)', NOT 'Project Orion' or any invented client/project name).\n"
             "3. Output estimated cost range in USD.\n"
             "4. Provide 3-4 milestone phases with estimated durations.\n\n"
             "Return strict JSON with keys:\n"
@@ -29,7 +29,7 @@ class EstimatorAgent:
             '  "realistic_weeks": float,\n'
             '  "pessimistic_weeks": float,\n'
             '  "cost_estimate_usd": "$XX,XXX - $XX,XXX",\n'
-            '  "calibrated_reference": "Specific reference case description",\n'
+            '  "calibrated_reference": "Comparable in scope to a mid-sized enterprise system module (~X requirements, Y components)",\n'
             '  "milestones": [\n'
             '    {"phase": "Phase Name", "weeks": float, "deliverables": "Key deliverables"}\n'
             '  ]\n'
@@ -62,12 +62,18 @@ class EstimatorAgent:
         if not all(k in data for k in ["optimistic_weeks", "realistic_weeks", "pessimistic_weeks"]):
             raise RuntimeError(f"EstimatorAgent returned incomplete timeline keys: {data}")
 
+        calibrated_ref = str(data.get("calibrated_reference", "")).strip()
+        # Sanitize against any fabricated proper-noun project names (CLAUDE.md §8 / Phase 6)
+        import re
+        if not calibrated_ref or re.search(r'\bProject\s+[A-Z]\w+', calibrated_ref, re.IGNORECASE):
+            calibrated_ref = f"Comparable in scope to a mid-sized enterprise system module (~{req_count} requirements, {arch_count} architectural components)"
+
         estimate = EstimateRange(
             optimistic_weeks=float(data.get("optimistic_weeks", 4.0)),
             realistic_weeks=float(data.get("realistic_weeks", 7.0)),
             pessimistic_weeks=float(data.get("pessimistic_weeks", 11.0)),
             cost_estimate_usd=str(data.get("cost_estimate_usd", "$30,000 - $55,000")),
-            calibrated_reference=str(data.get("calibrated_reference", "Calibrated reference workflow"))
+            calibrated_reference=calibrated_ref
         )
 
         claims = [

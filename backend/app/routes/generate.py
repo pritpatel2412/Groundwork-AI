@@ -1,5 +1,7 @@
 import asyncio
 import json
+import time
+from collections import defaultdict
 from typing import AsyncGenerator
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
@@ -16,6 +18,21 @@ from app.agents.verifier import verifier_agent
 from app.auth import get_current_user_with_query_fallback, AuthenticatedUser
 
 router = APIRouter(prefix="/workspaces", tags=["Generation & Orchestration"])
+
+_GENERATE_USER_TIMESTAMPS: dict[str, list[float]] = defaultdict(list)
+_RATE_LIMIT_WINDOW = 60.0 # seconds
+_MAX_REQUESTS_PER_WINDOW = 5 # PRODUCTION_HARDENING_BRIEF.md §6: per-user rate limit protection
+
+def check_generation_rate_limit(user_id: str):
+    now = time.time()
+    user_times = [t for t in _GENERATE_USER_TIMESTAMPS[user_id] if now - t < _RATE_LIMIT_WINDOW]
+    if len(user_times) >= _MAX_REQUESTS_PER_WINDOW:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Rate limit exceeded: You may initiate at most {_MAX_REQUESTS_PER_WINDOW} blueprint generations per minute. Please wait."
+        )
+    user_times.append(now)
+    _GENERATE_USER_TIMESTAMPS[user_id] = user_times
 
 discovery_agent = DiscoveryAgent()
 analyst_agent = AnalystAgent()
@@ -114,7 +131,7 @@ async def orchestrate_workspace_pipeline(workspace_id: str) -> AsyncGenerator[st
         })
         return
 
-    db_client.save_requirements(workspace_id, analyst_out.requirements, analyst_out.contradictions)
+    db_client.save_requirements(workspace_id, analyst_out.requirements, analyst_out.contradictions, analyst_out.open_questions)
     all_claims.extend(analyst_out.requirements)
 
     yield sse_event("trace", {
@@ -279,6 +296,8 @@ async def trigger_generation_stream(
     to power the Agent Trace Panel (BUILD_BRIEF.md §4.5, §5.3).
     Gated by authentication and workspace ownership check.
     """
+    check_generation_rate_limit(current_user.id)
+
     ws = db_client.get_workspace(workspace_id, current_user.id)
     if not ws:
         raise HTTPException(

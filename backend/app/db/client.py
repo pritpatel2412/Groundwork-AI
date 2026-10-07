@@ -39,6 +39,7 @@ class DBClient:
         self._chunks: Dict[str, SourceChunk] = {}
         self._requirements: Dict[str, List[Claim]] = {}
         self._contradictions: Dict[str, List[Contradiction]] = {}
+        self._open_questions: Dict[str, List[str]] = {}
         self._artifacts: Dict[str, Dict[str, Any]] = {}
 
         if SUPABASE_URL and SUPABASE_KEY:
@@ -65,6 +66,7 @@ class DBClient:
                     self._requirements[k] = [Claim(**item) for item in v]
                 for k, v in data.get("contradictions", {}).items():
                     self._contradictions[k] = [Contradiction(**item) for item in v]
+                self._open_questions = data.get("open_questions", {})
                 self._artifacts = data.get("artifacts", {})
             except Exception as e:
                 print(f"[DBClient] Error reading local db: {e}")
@@ -77,6 +79,7 @@ class DBClient:
                 "chunks": {k: v.model_dump() for k, v in self._chunks.items()},
                 "requirements": {k: [item.model_dump() for item in v] for k, v in self._requirements.items()},
                 "contradictions": {k: [item.model_dump() for item in v] for k, v in self._contradictions.items()},
+                "open_questions": self._open_questions,
                 "artifacts": self._artifacts
             }
             with open(LOCAL_DB_FILE, "w", encoding="utf-8") as f:
@@ -246,10 +249,12 @@ class DBClient:
         return [chunk for _, chunk in scored[:top_k]]
 
     # Requirements & Contradictions
-    def save_requirements(self, workspace_id: str, requirements: List[Claim], contradictions: List[Contradiction]):
+    def save_requirements(self, workspace_id: str, requirements: List[Claim], contradictions: List[Contradiction], open_questions: Optional[List[str]] = None):
         self._load_local_db()
         self._requirements[workspace_id] = requirements
         self._contradictions[workspace_id] = contradictions
+        if open_questions is not None:
+            self._open_questions[workspace_id] = open_questions
         if self.supabase:
             try:
                 for req in requirements:
@@ -302,11 +307,57 @@ class DBClient:
                     return [Contradiction(
                         id=r["id"],
                         description=r["description"],
-                        source_chunk_ids=r.get("source_chunk_ids", []) or []
+                        source_chunk_ids=r.get("source_chunk_ids", []) or [],
+                        status=r.get("status", "open"),
+                        resolution_notes=r.get("resolution_notes")
                     ) for r in res.data]
             except Exception:
                 pass
         return []
+
+    def resolve_contradiction(self, workspace_id: str, contradiction_id: str, resolution_notes: str) -> Optional[Contradiction]:
+        self._load_local_db()
+        target = None
+        for c in self._contradictions.get(workspace_id, []):
+            if c.id == contradiction_id:
+                c.status = "resolved"
+                c.resolution_notes = resolution_notes
+                target = c
+                break
+        if self.supabase and target:
+            try:
+                self.supabase.table("contradictions").update({
+                    "status": "resolved",
+                    "resolution_notes": resolution_notes
+                }).eq("id", contradiction_id).execute()
+            except Exception:
+                pass
+        self._save_local_db()
+        return target
+
+    def update_requirement_text(self, workspace_id: str, requirement_id: str, text: str) -> Optional[Claim]:
+        self._load_local_db()
+        target = None
+        for req in self._requirements.get(workspace_id, []):
+            if req.id == requirement_id:
+                req.text = text
+                req.explanation = "Modified by human user."
+                target = req
+                break
+        if self.supabase and target:
+            try:
+                self.supabase.table("requirements").update({
+                    "text": text,
+                    "explanation": "Modified by human user."
+                }).eq("id", requirement_id).execute()
+            except Exception:
+                pass
+        self._save_local_db()
+        return target
+
+    def get_open_questions(self, workspace_id: str) -> List[str]:
+        self._load_local_db()
+        return self._open_questions.get(workspace_id, [])
 
     # Artifacts
     def save_artifact(self, workspace_id: str, artifact_type: str, content: Any, claims: List[Claim]) -> str:
@@ -367,28 +418,76 @@ class DBClient:
                 pass
         return None
 
-    def update_claim_status(self, claim_id: str, status: str, explanation: Optional[str] = None):
+    def update_claim_status(
+        self,
+        claim_id: str,
+        status: str,
+        explanation: Optional[str] = None,
+        confidence: Optional[float] = None
+    ):
         self._load_local_db()
         for claims_list in self._requirements.values():
             for c in claims_list:
                 if c.id == claim_id:
                     c.status = status # type: ignore
-                    c.explanation = explanation
+                    if explanation is not None:
+                        c.explanation = explanation
+                    if confidence is not None:
+                        c.confidence = confidence
         for art in self._artifacts.values():
             for c in art.get("claims", []):
-                if (isinstance(c, dict) and c.get("id") == claim_id):
+                if isinstance(c, dict) and c.get("id") == claim_id:
                     c["status"] = status
-                    c["explanation"] = explanation
+                    if explanation is not None:
+                        c["explanation"] = explanation
+                    if confidence is not None:
+                        c["confidence"] = confidence
                 elif hasattr(c, "id") and c.id == claim_id:
                     c.status = status
-                    c.explanation = explanation
+                    if explanation is not None:
+                        c.explanation = explanation
+                    if confidence is not None:
+                        c.confidence = confidence
 
         if self.supabase:
             try:
-                self.supabase.table("requirements").update({"status": status}).eq("id", claim_id).execute()
-                self.supabase.table("artifact_claims").update({"status": status}).eq("id", claim_id).execute()
+                update_fields = {"status": status}
+                if confidence is not None:
+                    update_fields["confidence"] = confidence
+                self.supabase.table("requirements").update(update_fields).eq("id", claim_id).execute()
+                self.supabase.table("artifact_claims").update(update_fields).eq("id", claim_id).execute()
             except Exception:
                 pass
         self._save_local_db()
+
+    def resolve_citation_sources(self, citations: List[str]) -> List[Dict[str, Any]]:
+        """Resolves chunk IDs into human-readable document citations with text excerpts."""
+        self._load_local_db()
+        results = []
+        for cid in citations:
+            chunk = self.get_chunk(cid)
+            if not chunk:
+                continue
+            doc = self._documents.get(chunk.source_document_id)
+            doc_name = doc.filename if doc else "Source Material"
+            
+            # Extract clean, readable snippet (up to 200 chars)
+            clean_text = " ".join(chunk.text.split())
+            if len(clean_text) > 200:
+                clean_text = clean_text[:197].rstrip() + "..."
+            
+            results.append({
+                "chunk_id": cid,
+                "document_name": doc_name,
+                "text": clean_text
+            })
+        return results
+
+    def enrich_claims(self, claims: List[Claim]) -> List[Claim]:
+        """Populates citation_sources on claims that cite chunk IDs."""
+        for c in claims:
+            if c.citations and not c.citation_sources:
+                c.citation_sources = self.resolve_citation_sources(c.citations)
+        return claims
 
 db_client = DBClient()

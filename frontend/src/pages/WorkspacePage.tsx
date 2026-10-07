@@ -14,7 +14,8 @@ import {
   ArrowLeft,
   AlertCircle,
   Loader2,
-  FolderKanban
+  FolderKanban,
+  X
 } from 'lucide-react';
 import { api, Workspace } from '../lib/api';
 import { useAppStore } from '../lib/store';
@@ -138,36 +139,36 @@ export const WorkspacePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#ECEDEE] text-[#232427] relative selection:bg-[#E34A32]/20 selection:text-[#E34A32]">
+    <div className="min-h-screen md:h-screen md:overflow-hidden flex flex-col bg-[#ECEDEE] text-[#232427] relative selection:bg-[#E34A32]/20 selection:text-[#E34A32]">
       {/* Top Header */}
-      <header className="border-b border-black/10 bg-[#F4F5F5]/90 backdrop-blur-xl px-6 py-3.5 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset]">
-        <div className="flex items-center gap-4">
+      <header className="border-b border-black/10 bg-[#F4F5F5]/90 backdrop-blur-xl px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-40 shrink-0 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset]">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Link
             to="/dashboard"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 hover:bg-white text-[#232427] border border-black/10 text-xs font-semibold tracking-tight transition cursor-pointer shadow-xs hover:shadow"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 hover:bg-white text-[#232427] border border-black/10 text-xs font-semibold tracking-tight transition cursor-pointer shadow-xs hover:shadow shrink-0"
             title="Return to Workspaces Dashboard"
           >
             <ArrowLeft className="w-3.5 h-3.5 text-[#E34A32]" strokeWidth={1.5} />
-            <span>Dashboard</span>
+            <span className="hidden sm:inline">Dashboard</span>
           </Link>
 
           <div className="h-4 w-px bg-black/15 hidden sm:block" />
 
-          <div className="flex items-center gap-3">
-            <div className="relative flex items-center h-5 w-7">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="relative flex items-center h-5 w-7 shrink-0">
               <span className="w-3.5 h-3.5 rounded-full bg-[#232427] block shadow-xs" />
               <span className="w-3.5 h-3.5 rounded-full bg-[#E34A32] block -ml-1.5 shadow-xs" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-sm font-bold tracking-tight text-[#232427] flex items-center gap-1.5 font-sans">
+                <h1 className="text-sm font-bold tracking-tight text-[#232427] flex items-center gap-1 font-sans">
                   Groundwork <span className="font-serif-accent italic font-normal text-base text-[#E34A32]">Copilot</span>
                 </h1>
-                <span className="text-[9px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/25">
+                <span className="text-[9px] uppercase font-mono font-bold tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full bg-[#E34A32]/10 text-[#E34A32] border border-[#E34A32]/25 hidden xs:inline-block">
                   DUAL-VERIFIED
                 </span>
               </div>
-              <p className="text-[10px] font-mono text-[#55575c]">
+              <p className="text-[9px] sm:text-[10px] font-mono text-[#55575c] truncate max-w-[220px] sm:max-w-none">
                 COGNITIVE ARCHITECTURE ENGINE • CITE-OR-ABSTAIN LEDGER
               </p>
             </div>
@@ -175,23 +176,24 @@ export const WorkspacePage: React.FC = () => {
         </div>
 
         {/* Current Active Workspace Indicator & Trace Toggle */}
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-black/10 text-xs shadow-xs">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-black/10 text-xs shadow-xs">
             <FolderKanban className="w-3.5 h-3.5 text-[#E34A32]" />
             <span className="text-[#55575c] font-mono text-[10px]">WORKSPACE:</span>
-            <span className="font-semibold text-[#232427] truncate max-w-[200px]">{currentWorkspace.name}</span>
+            <span className="font-semibold text-[#232427] truncate max-w-[160px] lg:max-w-[220px]">{currentWorkspace.name}</span>
           </div>
 
           <button
             onClick={() => setShowTracePanel(!showTracePanel)}
-            className={`px-3.5 py-1.5 rounded-full border text-xs font-mono font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+            className={`px-3 sm:px-3.5 py-1.5 rounded-full border text-xs font-mono font-semibold flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
               showTracePanel
                 ? 'bg-[#232427] text-white border-[#232427] shadow-sm'
                 : 'bg-white/80 border-black/10 text-[#55575c] hover:text-[#232427]'
             }`}
           >
             <Cpu className="w-3.5 h-3.5 text-[#E34A32]" strokeWidth={1.5} />
-            <span>AGENT TRACE</span>
+            <span className="hidden sm:inline">AGENT TRACE</span>
+            <span className="sm:hidden">TRACE</span>
             {isGenerating ? (
               <span className="w-2 h-2 rounded-full bg-[#E34A32] animate-ping" />
             ) : (
@@ -201,10 +203,32 @@ export const WorkspacePage: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Body with Sidebar Navigation */}
-      <div className="flex-1 flex overflow-hidden relative z-10 max-w-[1440px] mx-auto w-full px-2 sm:px-4 py-4">
-        {/* Navigation Sidebar */}
-        <aside className="w-64 rounded-[28px] border border-black/10 bg-white/90 backdrop-blur-xl p-4 flex flex-col justify-between shrink-0 mr-4 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_12px_28px_-12px_rgba(35,36,39,0.08)]">
+      {/* Main Body Layout */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 relative z-10 max-w-[1600px] mx-auto w-full px-2 sm:px-4 py-3 gap-3 sm:gap-4">
+        {/* Mobile Horizontal Navigation Tabs (Visible on screens < md) */}
+        <div className="flex md:hidden overflow-x-auto gap-1.5 p-1.5 bg-white/90 backdrop-blur-md rounded-2xl border border-black/10 shrink-0 custom-scrollbar">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap shrink-0 transition cursor-pointer ${
+                  isActive
+                    ? 'bg-[#232427] text-white font-semibold shadow-xs'
+                    : 'text-[#55575c] hover:text-[#232427] hover:bg-black/5'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#E34A32]' : 'text-[#55575c]'}`} strokeWidth={1.5} />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Desktop Navigation Sidebar (Visible on screens >= md) */}
+        <aside className="w-60 lg:w-64 rounded-[28px] border border-black/10 bg-white/90 backdrop-blur-xl p-4 hidden md:flex flex-col justify-between shrink-0 overflow-y-auto custom-scrollbar shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_12px_28px_-12px_rgba(35,36,39,0.08)] min-h-0">
           <nav className="space-y-1">
             <div className="px-3 py-1 text-[10px] font-mono uppercase tracking-wider text-[#55575c] mb-1">
               Transformation Pipeline
@@ -239,7 +263,7 @@ export const WorkspacePage: React.FC = () => {
           </nav>
 
           {/* Model Family Badge */}
-          <div className="p-3.5 rounded-2xl bg-[#F4F5F5] border border-black/5 text-[10px] text-[#55575c] space-y-1.5 shadow-inner">
+          <div className="p-3.5 rounded-2xl bg-[#F4F5F5] border border-black/5 text-[10px] text-[#55575c] space-y-1.5 shadow-inner mt-4 shrink-0">
             <div className="flex items-center justify-between text-[#232427] font-semibold font-mono text-[11px]">
               <span className="flex items-center gap-1.5">
                 <Activity className="w-3 h-3 text-[#E34A32]" strokeWidth={1.5} />
@@ -262,8 +286,8 @@ export const WorkspacePage: React.FC = () => {
           </div>
         </aside>
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-y-auto p-6 sm:p-8 rounded-[28px] border border-black/10 bg-white/80 backdrop-blur-xl shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_16px_36px_-16px_rgba(35,36,39,0.08)]">
+        {/* Content Area with Visible Styled Scrollbar */}
+        <main className="flex-1 overflow-y-auto custom-scrollbar min-h-0 p-4 sm:p-6 lg:p-8 rounded-[28px] border border-black/10 bg-white/80 backdrop-blur-xl shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_16px_36px_-16px_rgba(35,36,39,0.08)]">
           {activeTab === 'ingestion' && <IngestionPanel />}
           {activeTab === 'requirements' && <RequirementsView />}
           {activeTab === 'architecture' && <ArchitectureView />}
@@ -274,11 +298,30 @@ export const WorkspacePage: React.FC = () => {
           {activeTab === 'export' && <ExportPanel />}
         </main>
 
-        {/* Persistent Agent Trace Side Panel */}
+        {/* Persistent Agent Trace Desktop Panel */}
         {showTracePanel && (
-          <aside className="w-80 rounded-[28px] border border-black/10 p-4 shrink-0 hidden lg:block overflow-y-auto bg-white/90 backdrop-blur-md ml-4 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_12px_28px_-12px_rgba(35,36,39,0.08)]">
+          <aside className="w-80 xl:w-88 shrink-0 hidden lg:flex flex-col min-h-0 overflow-hidden">
             <AgentTracePanel />
           </aside>
+        )}
+
+        {/* Mobile Slide-Over Trace Drawer (Visible when toggled on mobile/tablet) */}
+        {showTracePanel && (
+          <div className="lg:hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex justify-end p-2 sm:p-4 animate-in fade-in duration-200">
+            <div className="w-full max-w-sm h-full flex flex-col relative bg-white rounded-[28px] overflow-hidden shadow-2xl p-2 border border-black/10">
+              <button
+                type="button"
+                onClick={() => setShowTracePanel(false)}
+                className="absolute top-4 right-4 z-20 p-2 rounded-full bg-[#F4F5F5] text-[#55575c] hover:text-[#232427] transition cursor-pointer"
+                title="Close Agent Trace Drawer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <AgentTracePanel />
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

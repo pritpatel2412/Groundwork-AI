@@ -30,11 +30,17 @@ class VerifierAgent:
     def _call_checker(self, model_name: str, model_id: str, claim_text: str, source_context: str) -> Tuple[str, str]:
         """Query a single independent checker model and extract verdict and explanation."""
         system_prompt = (
-            "You are an independent, objective fact-checker for an enterprise transformation system.\n"
-            "Given a claim and the exact source text it cites, evaluate whether the source text directly supports the claim.\n"
-            "Do NOT assume or extrapolate facts not present in the source text.\n\n"
+            "You are an independent, objective fact-checker evaluating claims against cited enterprise source material.\n"
+            "Determine if the cited source text substantiates the substantive factual assertions of the claim.\n\n"
+            "Rubric:\n"
+            "- 'verified': The substantive facts, roles, workflows, or requirements in the claim are directly confirmed "
+            "or faithfully paraphrased by the source text. Minor lexical variations (e.g., 'validating' vs 'ensuring that ... is valid', "
+            "'determine if' vs 'determine whether', or standard requirement framing like 'The system must...') count as supported "
+            "if the core business meaning matches.\n"
+            "- 'unsupported': The claim asserts facts, numerical thresholds, constraints, or procedures that are absent, "
+            "contradicted, or materially altered from the source text.\n\n"
             "Return strict JSON with keys:\n"
-            "- 'verdict': 'verified' (if the source directly supports the claim) or 'unsupported' (if it does not or makes ungrounded assumptions)\n"
+            "- 'verdict': 'verified' or 'unsupported'\n"
             "- 'explanation': One concise sentence explaining the verdict.\n"
         )
         user_content = f"Claim to Verify:\n\"{claim_text}\"\n\nCited Source Text:\n{source_context}"
@@ -140,14 +146,14 @@ class VerifierAgent:
                 calibrated_score = calibrated_confidence(claim.text, chunk_texts)
                 claim.confidence = calibrated_score
                 claim.explanation = f"Inferred logic with {round(calibrated_score*100, 1)}% calibrated retrieval similarity."
-                db_client.update_claim_status(claim.id, claim.status, claim.explanation)
+                db_client.update_claim_status(claim.id, claim.status, claim.explanation, claim.confidence)
                 return claim
 
             verdict = self.verify_claim(claim, chunk_texts)
             claim.status = verdict.verdict
             claim.explanation = verdict.explanation
             claim.confidence = verdict.confidence
-            db_client.update_claim_status(claim.id, claim.status, claim.explanation)
+            db_client.update_claim_status(claim.id, claim.status, claim.explanation, claim.confidence)
             return claim
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
